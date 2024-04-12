@@ -63,5 +63,5 @@ PATCH {{baseurl}}/devices/{{test200_MacID}}?path=users&action=append
 Content-Type: application/json
 
 [
-    "awatiniranjan@fuddimail.com"
+    "kneerunjun@gandumail.com"
 ]

@@ -24,7 +24,7 @@ type QueryDevices interface {
 	DeleteDevice(mac string, ctx context.Context) httperr.HttpErr
 	DevicesOfUser(userid string, ctx context.Context, result *[]Device) httperr.HttpErr
 	PatchConfg(DevMacID, aquacfg.Schedule, context.Context) httperr.HttpErr
-	AppendUsers(DevMacID, []string, context.Context) httperr.HttpErr
+	AppendUsers(DevMacID, []string, bool, context.Context) httperr.HttpErr
 }
 
 type qryDevices struct {
@@ -119,11 +119,18 @@ func (qd *qryDevices) PatchConfg(mac DevMacID, sched aquacfg.Schedule, ctx conte
 	return nil
 }
 
-func (qd *qryDevices) AppendUsers(mac DevMacID, users []string, ctx context.Context) httperr.HttpErr {
+// AppendUsers:  patches (appends / replaces ) the list of legit users
+func (qd *qryDevices) AppendUsers(mac DevMacID, users []string, replace bool, ctx context.Context) httperr.HttpErr {
 	if !mac.IsValid() {
 		return httperr.ErrInvalidParam(fmt.Errorf("invalid mac id %s for the device being patched", mac))
 	}
-	_, err := qd.UpdateOne(ctx, bson.M{"mac": mac}, bson.M{"$addToSet": bson.M{"users": bson.M{"$each": users}}})
+	var patch bson.M
+	if !replace {
+		patch = bson.M{"$addToSet": bson.M{"users": bson.M{"$each": users}}}
+	} else {
+		patch = bson.M{"$set": bson.M{"users": users}}
+	}
+	_, err := qd.UpdateOne(ctx, bson.M{"mac": mac}, patch)
 	if err != nil {
 		return httperr.ErrDBQuery(err)
 	}

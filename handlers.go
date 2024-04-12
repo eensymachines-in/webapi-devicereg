@@ -97,6 +97,9 @@ func HndlOneDvc(c *gin.Context) {
 					}))
 					return
 				}
+			} else {
+				c.AbortWithStatus(http.StatusMethodNotAllowed)
+				return
 			}
 		} else if path == "users" {
 			userEmails := []string{}
@@ -106,9 +109,9 @@ func HndlOneDvc(c *gin.Context) {
 				}))
 				return
 			}
-			if action == "append" {
+			if action == "append" || action == "replace" {
 				// append additional owners for the device
-				if err := DevicesCollc(db).AppendUsers(deviceDetails.MacID, userEmails, ctx); err != nil {
+				if err := DevicesCollc(db).AppendUsers(deviceDetails.MacID, userEmails, map[string]bool{"append": false, "replace": true}[action], ctx); err != nil {
 					httperr.HttpErrOrOkDispatch(c, err, log.WithFields(log.Fields{
 						"stack_trace": "HndlOneDvc/PATCH",
 						"mac":         deviceDetails.MacID,
@@ -116,6 +119,10 @@ func HndlOneDvc(c *gin.Context) {
 					}))
 					return
 				}
+			} else {
+				// if the action is something else, this shall send out 405
+				c.AbortWithStatus(http.StatusMethodNotAllowed)
+				return
 			}
 		}
 		// whenever done patching, getting the updated device details and dispatching via json  over http

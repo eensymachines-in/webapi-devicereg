@@ -1,0 +1,74 @@
+version: '3.1'
+
+services:
+  srv_mongo:
+    image: mongo:4.2-bionic
+    command: [--auth]
+    secrets:
+      - db_root_username
+      - db_root_password
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME_FILE=/run/secrets/db_root_username
+      - MONGO_INITDB_ROOT_PASSWORD_FILE=/run/secrets/db_root_password
+    volumes: 
+      - /data/eensyaquap/mongo:/data/db
+    ports:
+      - 57017:27017
+    networks:
+      - eensyaqp-nw
+    container_name: ctn_mongo
+    tty: true
+    stdin_open: true
+    healthcheck:
+      test: "exit 0"
+  srv_gin:
+    build: 
+      context: .
+      args:
+        - SRC=${SRCDIR}
+        - LOG=${LOGDIR}
+        - RUN=${RUNDIR}
+        - ETC=${ETCDIR}
+        - BIN=${BINDIR}
+        - APPNAME=${APPNAME}
+    ports:
+      - 8081:8080 
+    volumes:
+      - .:${SRCDIR}
+    environment:
+      - FLOG=${FLAG_FLOG}
+      - SILENT=${FLAG_SILENCE}
+      - GINMODE=${FLAG_GINMODE}
+      - AMQP_SERVER=srv_rabbit
+      - AMQP_LOGIN=eensyiot-admin:33n5y4dm1n
+      - AMQP_QNAME=config-alerts
+      - MONGO_DB_NAME=${MONGODBNAME}
+      - DB_SEED=${DBSEED}
+    depends_on:
+      srv_mongo:
+        condition: service_healthy
+    networks:
+      - eensyaqp-nw
+    secrets:
+      - db_root_username
+      - db_root_password
+      - mongo_uri
+    container_name: ctn_gin 
+    stdin_open: true
+    tty: true
+    entrypoint: ["${BINDIR}/${APPNAME}"]
+  
+networks:
+  eensyaqp-nw:
+      driver: bridge
+secrets:
+  db_root_username:
+    file: ./secrets/db_root_username.secret
+  db_root_password:
+    file: ./secrets/db_root_password.secret
+  mongo_uri:
+    file: ./secrets/mongo_uri.secret
+  amqp_username:
+    file: ./secrets/amqp_username.secret
+  amqp_password:
+    file: ./secrets/amqp_password.secret

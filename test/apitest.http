@@ -1,0 +1,67 @@
+# https://kenslearningcurve.com/tutorials/test-an-api-by-using-http-files-in-vscode/
+@baseurl=http://localhost:8081/api
+@test200_MacID=52-3C-42-D4-A9-F4
+@test404_MacID=26-97-ED-E5-FB-ED
+### Simple test to post new device registration
+POST {{baseurl}}/devices
+Content-Type: application/json
+
+{
+    "name": "Aquaponics pump control-I@Saidham",
+    "make" :"Raspberry Pi 0w 512M 16G",
+    "mac": "52-3C-42-D4-A9-F4",
+    "location": "18.41827883006836, 73.76921566514285",
+    "users": [
+        "kneerunjun@gmail.com",
+        "awatiniranjan@gmail.com"
+    ],
+    "cfg": {
+        "tickat": "12:00",
+        "config": 0,
+        "interval": 100,
+        "pulsegap": 80
+    }
+}
+
+### getting the device details given the mac id 
+
+GET {{baseurl}}/devices/{{test200_MacID}}
+
+### trying to get a device whos mac id isnt registered
+
+GET {{baseurl}}/devices/{{test404_MacID}}
+
+### getting a list of user filtered by the users
+
+GET {{baseurl}}/devices?filter=users&user=kneerunjun@gmail.com
+
+### Deleting the existing device registration
+
+DELETE {{baseurl}}/devices/{{test200_MacID}}
+
+### deleting a device registration that does not exists 
+
+DELETE  {{baseurl}}/devices/{{test404_MacID}}
+
+
+### simple schedul patch
+
+PATCH {{baseurl}}/devices/{{test200_MacID}}?path=config&action=replace
+Content-Type: application/json
+
+{
+    "tickat": "12:00",
+    "config": 3,
+    "interval": 250,
+    "pulsegap": 11
+    
+}
+
+
+### trying to append user to the device owners 
+PATCH {{baseurl}}/devices/{{test200_MacID}}?path=users&action=append
+Content-Type: application/json
+
+[
+    "awatiniranjan@fuddimail.com"
+]

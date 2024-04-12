@@ -25,17 +25,19 @@ func mongoClDBInCtx(c *gin.Context) (*mongo.Client, *mongo.Database) {
 // sets the device details in the context for the downstream handlers
 func DeviceOfID(c *gin.Context) {
 	cl, db := mongoClDBInCtx(c)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	if cl == nil || db == nil {
 		httperr.HttpErrOrOkDispatch(c, httperr.ErrGatewayConnect(fmt.Errorf("failed to connect to mongo db")), log.WithFields(log.Fields{
 			"stack_trace": "HndlLstDvcs",
 			"client_null": cl == nil,
 			"db_null":     db == nil,
 		}))
+		if cl != nil {
+			cl.Disconnect(ctx)
+		}
 		return
 	}
-	// NOTE: will not close the client here, since this is not the last of all the handlers in the chain
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 	result := Device{}
 	if err := DevicesCollc(db).GetOfId(DevMacID(c.Param("deviceid")), &result, ctx); err != nil {
 		httperr.HttpErrOrOkDispatch(c, err, log.WithFields(log.Fields{
@@ -43,6 +45,7 @@ func DeviceOfID(c *gin.Context) {
 			"client_null": cl == nil,
 			"db_null":     db == nil,
 		}))
+		cl.Disconnect(ctx)
 		return
 	}
 	c.Set("device", &result)

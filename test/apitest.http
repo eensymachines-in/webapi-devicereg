@@ -33,7 +33,7 @@ GET {{baseurl}}/devices/{{test404_MacID}}
 
 ### getting a list of user filtered by the users
 
-GET {{baseurl}}/devices?filter=users&user=kneerunjun@gmail.com
+GET {{baseurl}}/devices?filter=users&user=kneerunjun@gandumail.com
 
 ### Deleting the existing device registration
 
@@ -63,5 +63,5 @@ PATCH {{baseurl}}/devices/{{test200_MacID}}?path=users&action=append
 Content-Type: application/json
 
 [
-    "kneerunjun@gandumail.com"
+    "kneerunjun@gadnfad.com"
 ]

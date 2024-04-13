@@ -18,6 +18,7 @@ func (mac DevMacID) IsValid() bool {
 
 type Device struct {
 	ID       primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
+	Name     string             `bson:"name" json:"name"` // its easier to use this when displaying on the front end
 	MacID    DevMacID           `bson:"mac" json:"mac"`
 	Location string             `bson:"location" json:"location"` // Google lat long coordinates as string
 	Make     string             `bson:"make" json:"make"`         // string description of the platform hardware used

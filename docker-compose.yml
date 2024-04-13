@@ -59,7 +59,7 @@ services:
       - GINMODE=${FLAG_GINMODE}
       - AMQP_SERVER=srv_rabbit
       - AMQP_LOGIN=eensyiot-admin:33n5y4dm1n
-      - AMQP_QNAME=config-alerts
+      - AMQP_XNAME=configs_direct
       - MONGO_DB_NAME=${MONGODBNAME}
       - DB_SEED=${DBSEED}
     depends_on:

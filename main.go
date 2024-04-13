@@ -25,7 +25,7 @@ var (
 	mongoConnectURI string = ""
 	mongoDBName            = ""
 	amqpConnectURI         = ""
-	rabbitQname            = "" // name of the rabbit queue
+	rabbitXchng            = "" // name of the rabbit queue
 )
 
 func init() {
@@ -89,7 +89,7 @@ func init() {
 	if amqpConnectURI == "" {
 		log.Fatal("amqp connect uri is empty, check secret file and rerun application")
 	}
-	rabbitQname = os.Getenv("AMQP_QNAME")
+	rabbitXchng = os.Getenv("AMQP_XNAME")
 
 }
 
@@ -112,7 +112,7 @@ func main() {
 	// Patching device details  - config or users
 	// ?path=users&action=append
 	// ?path=config
-	devices.PATCH("/:deviceid", RabbitConnectWithChn(amqpConnectURI, "configs_direct"), DeviceOfID, HndlOneDvc)
+	devices.PATCH("/:deviceid", RabbitConnectWithChn(amqpConnectURI, rabbitXchng), DeviceOfID, HndlOneDvc)
 	// Removing a device registration completely
 	devices.DELETE("/:deviceid", HndlOneDvc)
 

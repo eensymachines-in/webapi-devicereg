@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/eensymachines-in/errx/httperr"
 	"github.com/eensymachines-in/patio/aquacfg"
@@ -102,6 +103,10 @@ func HndlOneDvc(c *gin.Context) {
 					}))
 					return
 				}
+				/* Rabbit publish the new config with routing key as mac id of the device
+				Devices will bind queues using their own mac id for listening to messages
+				since this is configs_direct amqp exchange only config changes will be posted here
+				*/
 				val, _ := c.Get("amqp-ch")
 				amqpCh := val.(*amqp.Channel)
 				val, _ = c.Get("amqp-conn")
@@ -110,13 +115,17 @@ func HndlOneDvc(c *gin.Context) {
 				defer amqpConn.Close()
 				defer amqpCh.Close()
 				byt, _ := json.Marshal(newCfg)
-				err := amqpCh.Publish("configs_direct", string(deviceDetails.MacID), false, false, amqp.Publishing{
+				err := amqpCh.Publish(os.Getenv("AMQP_XNAME"), string(deviceDetails.MacID), false, false, amqp.Publishing{
 					ContentType: "text/plain",
 					Body:        byt,
 				})
+				/* Incase the publishing fails, the database changes will be out of sync from the device on the ground
+				such cases its required to undo the changes on the database on our way out to the original configuration  */
 				if err != nil {
 					httperr.HttpErrOrOkDispatch(c, httperr.ErrGatewayConnect(fmt.Errorf("failed to send message to amqp server %s", err)), log.WithFields(log.Fields{}))
 					// since amqp publish  and db update should be atomic operation
+					/* Unfortunately in the case if this fails, chances of which are minimal we still do get the device and the datbase out of sysnc
+					hence you see no error is handled here */
 					DevicesCollc(db).PatchConfg(deviceDetails.MacID, *deviceDetails.Cfg, ctx) // reverting the old settings
 					return
 				}

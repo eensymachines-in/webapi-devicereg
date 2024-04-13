@@ -41,10 +41,10 @@ PATCH {{baseurl}}/{{test200_MacID}}?path=config&action=replace
 Content-Type: application/json
 
 {
-    "tickat": "12:00",
-    "config": 0,
-    "interval": 250,
-    "pulsegap": 11
+    "tickat": "10:00",
+    "config": 2,
+    "interval": 120,
+    "pulsegap": 50
     
 }
 

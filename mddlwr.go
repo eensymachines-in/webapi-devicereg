@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/eensymachines-in/errx/httperr"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
+	"github.com/streadway/amqp"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -33,6 +35,55 @@ func CORS(c *gin.Context) {
 		c.AbortWithStatus(http.StatusOK)
 	}
 }
+
+func RabbitConnectWithChn(connString, xname string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		conn, err := amqp.Dial(connString)
+		if err != nil {
+			httperr.HttpErrOrOkDispatch(c, httperr.ErrGatewayConnect(err), log.WithFields(log.Fields{
+				"stack":       "RabbitConnectWithChn",
+				"conn_string": connString,
+			}))
+			return
+		}
+		// defer conn.Close()
+		ch, err := conn.Channel()
+		if err != nil {
+			httperr.HttpErrOrOkDispatch(c, httperr.ErrGatewayConnect(err), log.WithFields(log.Fields{
+				"stack":  "RabbitConnectWithChn",
+				"login":  os.Getenv("AMQP_LOGIN"),
+				"server": os.Getenv("AMQP_SERVER"),
+			}))
+			conn.Close() // incase no channel, we close the channel before we exit the stack
+			return
+		}
+		// NOTE: we shall be using a direct exchange with mac id specific routing key
+		err = ch.ExchangeDeclare(
+			xname,    // name
+			"direct", // exhange type
+			true,     // durable
+			false,    //auto deleted
+			false,    //internal
+			false,    // nowait
+			nil,      //amqp.table
+		)
+		if err != nil {
+			httperr.HttpErrOrOkDispatch(c, httperr.ErrGatewayConnect(err), log.WithFields(log.Fields{
+				"stack":  "RabbitConnectWithChn",
+				"login":  os.Getenv("AMQP_LOGIN"),
+				"server": os.Getenv("AMQP_SERVER"),
+			}))
+			// incase declaring the exchange fails we close the channel and connection on our way out
+			ch.Close()
+			conn.Close()
+			return
+		}
+		c.Set("amqp-ch", ch)
+		c.Set("amqp-conn", conn)
+		c.Next()
+	}
+}
+
 func MongoConnectURI(uri, dbname string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)

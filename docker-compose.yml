@@ -21,6 +21,24 @@ services:
     stdin_open: true
     healthcheck:
       test: "exit 0"
+  srv_rabbit:
+    image: rabbitmq:3.13-rc-management
+    ports:
+      - 35672:15672
+      - 5672:5672
+    networks:
+      - eensyaqp-nw
+    secrets:
+      - amqp_username
+      - amqp_password
+    environment:
+      - RABBITMQ_DEFAULT_USER=eensyiot-admin
+      - RABBITMQ_DEFAULT_PASS=33n5y4dm1n
+    stdin_open: true 
+    tty: true
+    container_name: ctn_rabbit
+    healthcheck:
+      test: "exit 0"
   srv_gin:
     build: 
       context: .
@@ -47,12 +65,15 @@ services:
     depends_on:
       srv_mongo:
         condition: service_healthy
+      srv_rabbit:
+        condition: service_healthy
     networks:
       - eensyaqp-nw
     secrets:
       - db_root_username
       - db_root_password
       - mongo_uri
+      - amqp_uri
     container_name: ctn_gin 
     stdin_open: true
     tty: true
@@ -72,3 +93,5 @@ secrets:
     file: ./secrets/amqp_username.secret
   amqp_password:
     file: ./secrets/amqp_password.secret
+  amqp_uri:
+    file: ./secrets/amqp_uri.secret

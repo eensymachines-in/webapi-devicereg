@@ -42,7 +42,7 @@ Content-Type: application/json
 
 {
     "tickat": "12:00",
-    "config": 3,
+    "config": 0,
     "interval": 250,
     "pulsegap": 11
     

@@ -18,11 +18,14 @@ import (
 
 const (
 	MONGO_URI_SECRET = "/run/secrets/mongo_uri"
+	AMQP_URI_SECRET  = "/run/secrets/amqp_uri"
 )
 
 var (
 	mongoConnectURI string = ""
 	mongoDBName            = ""
+	amqpConnectURI         = ""
+	rabbitQname            = "" // name of the rabbit queue
 )
 
 func init() {
@@ -72,6 +75,22 @@ func init() {
 	if mongoDBName == "" {
 		log.Fatal("invalid/empty name for mongo db, cannot proceed")
 	}
+
+	/* Making AMQP connections */
+	f, err = os.Open(AMQP_URI_SECRET)
+	if err != nil || f == nil {
+		log.Fatalf("failed to open amqp connection uri from secret file %s", err)
+	}
+	byt, err = io.ReadAll(f)
+	if err != nil {
+		log.Fatalf("failed to read amqp connection uri from secret file %s", err)
+	}
+	amqpConnectURI = string(byt)
+	if amqpConnectURI == "" {
+		log.Fatal("amqp connect uri is empty, check secret file and rerun application")
+	}
+	rabbitQname = os.Getenv("AMQP_QNAME")
+
 }
 
 func main() {
@@ -93,7 +112,7 @@ func main() {
 	// Patching device details  - config or users
 	// ?path=users&action=append
 	// ?path=config
-	devices.PATCH("/:deviceid", DeviceOfID, HndlOneDvc)
+	devices.PATCH("/:deviceid", RabbitConnectWithChn(amqpConnectURI, "configs_direct"), DeviceOfID, HndlOneDvc)
 	// Removing a device registration completely
 	devices.DELETE("/:deviceid", HndlOneDvc)
 

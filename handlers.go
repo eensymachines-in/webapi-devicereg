@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/eensymachines-in/patio/aquacfg"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
+	"github.com/streadway/amqp"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -98,6 +100,24 @@ func HndlOneDvc(c *gin.Context) {
 						"pulsegap":    newCfg.PulseGap,
 						"interval":    newCfg.Interval,
 					}))
+					return
+				}
+				val, _ := c.Get("amqp-ch")
+				amqpCh := val.(*amqp.Channel)
+				val, _ = c.Get("amqp-conn")
+				amqpConn := val.(*amqp.Connection)
+
+				defer amqpConn.Close()
+				defer amqpCh.Close()
+				byt, _ := json.Marshal(newCfg)
+				err := amqpCh.Publish("configs_direct", string(deviceDetails.MacID), false, false, amqp.Publishing{
+					ContentType: "text/plain",
+					Body:        byt,
+				})
+				if err != nil {
+					httperr.HttpErrOrOkDispatch(c, httperr.ErrGatewayConnect(fmt.Errorf("failed to send message to amqp server %s", err)), log.WithFields(log.Fields{}))
+					// since amqp publish  and db update should be atomic operation
+					DevicesCollc(db).PatchConfg(deviceDetails.MacID, *deviceDetails.Cfg, ctx) // reverting the old settings
 					return
 				}
 			} else {

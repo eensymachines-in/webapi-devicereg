@@ -7,6 +7,7 @@ require (
 	github.com/eensymachines-in/patio v0.0.0-20240411082548-329da191c0fe
 	github.com/gin-gonic/gin v1.9.1
 	github.com/sirupsen/logrus v1.9.3
+	github.com/streadway/amqp v1.1.0
 	go.mongodb.org/mongo-driver v1.14.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22
 )

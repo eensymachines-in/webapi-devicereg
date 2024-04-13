@@ -1,5 +1,5 @@
 
-@baseurl=http://localhost:8081/api
+@baseurl=http://localhost:8081/api/devices
 @test200_MacID=52-3C-42-D4-A9-F4
 @test404_MacID=26-97-ED-E5-FB-ED
 ### Negative test to add device with invalid configuration
@@ -66,8 +66,12 @@ Content-Type: application/json
 
 ### trying to get a device whos mac id isnt registered
 
-GET {{baseurl}}/devices/{{test404_MacID}}
+GET {{baseurl}}/{{test404_MacID}}
 
 ### deleting a device registration that does not exists 
 
-DELETE  {{baseurl}}/devices/{{test404_MacID}}
+DELETE  {{baseurl}}/{{test404_MacID}}
+
+### getting devices for the user that does not exists with any device
+
+GET {{baseurl}}?filter=users&user=behenkaloda@gmail.com

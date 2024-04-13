@@ -31,6 +31,9 @@ type qryDevices struct {
 	*mongo.Collection
 }
 
+// GetOfId : Gets a single device of Mac ID
+// result is out param that will get hydrated with the details.
+// Errors in case  document not found, or the query fails.
 func (qd *qryDevices) GetOfId(mac DevMacID, result *Device, ctx context.Context) httperr.HttpErr {
 	*result = Device{} // fresh instance for the output
 	sr := qd.FindOne(ctx, bson.M{"mac": mac})
@@ -48,11 +51,11 @@ func (qd *qryDevices) GetOfId(mac DevMacID, result *Device, ctx context.Context)
 }
 
 // AddNewDevice : Adds a new device to the collection of devices
-// Will validate the device before adding, error if invalidated
+// Will validate the device before adding, error if invalidated - includes the validation for mac, cfg, users
 // Once the device is added, mongo object id is updated on the device - json marshalling and dispatch
 func (qd *qryDevices) AddNewDevice(dev *Device, ctx context.Context) httperr.HttpErr {
 	if !dev.IsValid() || dev == nil {
-		return httperr.ErrInvalidParam(fmt.Errorf("invalid device to add, one or more fields of the device is invalidated"))
+		return httperr.ErrInvalidParam(fmt.Errorf("one or more fields on the device is invalid"))
 	}
 	count, err := qd.CountDocuments(ctx, bson.M{"mac": dev.MacID})
 	if err != nil {

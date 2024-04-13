@@ -1,6 +1,7 @@
 /*
 	For all the devices registered under eensymachines,
 	or built by eensymachines this serves as the single source of truth for device status
+	Here you can patch devices for their running configuration, such as controlling relays thru clock
 
 author		: kneerunjun@gmail.com
 Copyright 	: eensymachines.in@2024

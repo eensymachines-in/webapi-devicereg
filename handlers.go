@@ -157,7 +157,15 @@ func HndlLstDvcs(c *gin.Context) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	if c.Request.Method == "POST" {
-		// Posting a new device as registration
+		/*
+			Adding a new device registration
+			- Binds the payload to Device
+			- duplicate entrues not allowed, tracked by macID
+			- invalid MAC IDs would be rejected
+			- devices with no users are rejected
+			- devices with invalid schedule configurations are rejected
+			- ObjectID is auto generated and updated in the outgoing device
+		*/
 		newDevc := Device{}
 		if err := c.ShouldBind(&newDevc); err != nil {
 			httperr.HttpErrOrOkDispatch(c, httperr.ErrBinding(err), log.WithFields(log.Fields{
@@ -165,11 +173,6 @@ func HndlLstDvcs(c *gin.Context) {
 			}))
 			return
 		}
-		log.WithFields(log.Fields{
-			"mac": newDevc.MacID,
-		}).Debug("payload bound")
-		// Will add the new device registration to the database
-		// Send back the device details with OID details on the same object
 		if err := DevicesCollc(db).AddNewDevice(&newDevc, ctx); err != nil {
 			httperr.HttpErrOrOkDispatch(c, err, log.WithFields(log.Fields{
 				"stack_trace": "HndlLstDvcs/POST",
@@ -180,10 +183,10 @@ func HndlLstDvcs(c *gin.Context) {
 		return
 	} else if c.Request.Method == "GET" {
 		// ?filter=users&user=email
+		// val, is the email of the users for which we filter the devices
 		filter := c.Query("filter")
 		val := c.Query("user")
 		if filter == "users" {
-			// val, is the email of the users for which we filter the devices
 			result := []Device{}
 			if err := DevicesCollc(db).DevicesOfUser(val, ctx, &result); err != nil {
 				httperr.HttpErrOrOkDispatch(c, err, log.WithFields(log.Fields{

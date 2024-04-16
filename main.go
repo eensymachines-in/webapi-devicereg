@@ -17,8 +17,8 @@ import (
 )
 
 const (
-	MONGO_URI_SECRET = "/run/secrets/mongo_uri"
-	AMQP_URI_SECRET  = "/run/secrets/amqp_uri"
+	MONGO_URI_SECRET = "/run/secrets/vol-mongouri/uri"
+	AMQP_URI_SECRET  = "/run/secrets/vol-amqpuri/uri"
 )
 
 var (

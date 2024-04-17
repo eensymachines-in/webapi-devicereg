@@ -62,11 +62,11 @@ services:
       - AMQP_XNAME=configs_direct
       - MONGO_DB_NAME=${MONGODBNAME}
       - DB_SEED=${DBSEED}
-    depends_on:
-      srv_mongo:
-        condition: service_healthy
-      srv_rabbit:
-        condition: service_healthy
+    # depends_on:
+    #   srv_mongo:
+    #     condition: service_healthy
+    #   srv_rabbit:
+    #     condition: service_healthy
     networks:
       - eensyaqp-nw
     secrets:
@@ -77,7 +77,7 @@ services:
     container_name: ctn_gin 
     stdin_open: true
     tty: true
-    entrypoint: ["${BINDIR}/${APPNAME}"]
+    # entrypoint: ["${BINDIR}/${APPNAME}"]
   
 networks:
   eensyaqp-nw:

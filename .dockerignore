@@ -3,3 +3,6 @@
 *.md
 docker-compose.yml
 Dockerfile
+k8s/
+test/
+secrets/

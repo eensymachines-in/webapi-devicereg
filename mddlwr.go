@@ -88,20 +88,28 @@ func MongoConnectURI(uri, dbname string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 		client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
-		if err != nil {
+		log.Info("mongo.Connect")
+		if err != nil || client == nil {
+			log.WithFields(log.Fields{"err": err}).Info("mongo.Connect.Error")
 			httperr.HttpErrOrOkDispatch(c, httperr.ErrGatewayConnect(err), log.WithFields(log.Fields{
 				"stack": "MongoConnect",
 				"uri":   uri,
 			}))
 			return
 		}
-		if client.Ping(ctx, readpref.Primary()) != nil {
+		if err := client.Ping(ctx, readpref.Primary()); err != nil {
+			log.WithFields(log.Fields{
+				"err": err,
+			}).Error("mongo.Ping.Error")
 			httperr.HttpErrOrOkDispatch(c, httperr.ErrGatewayConnect(err), log.WithFields(log.Fields{
 				"stack": "MongoConnect",
 				"uri":   uri,
 			}))
 			return
 		}
+		log.WithFields(log.Fields{
+			"client": client == nil,
+		}).Debug("from inside MongoConnectURI")
 		c.Set("mongo-client", client)
 		c.Set("mongo-database", client.Database(dbname))
 	}

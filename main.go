@@ -9,8 +9,10 @@ Copyright 	: eensymachines.in@2024
 package main
 
 import (
+	"bytes"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
@@ -28,6 +30,24 @@ var (
 	rabbitXchng            = "" // name of the rabbit queue
 )
 
+// readK8SecretMount : secrets mounted on the pod read inside the container
+// fp		: filepath of the secret file
+func readK8SecretMount(fp string) ([]string, error) {
+	f, err := os.Open(fp)
+	if err != nil {
+		return nil, err
+	}
+	byt, err := io.ReadAll(f)
+	if err != nil {
+		return nil, err
+	}
+	if bytes.HasSuffix(byt, []byte("\n")) { //often file read in will have this as a suffix
+		byt, _ = bytes.CutSuffix(byt, []byte("\n"))
+	}
+	/* There could be multiple secrets in the same file separated by white space */
+	return strings.Split(string(byt), " "), nil
+}
+
 func init() {
 	log.SetFormatter(&log.TextFormatter{
 		DisableColors: false,
@@ -36,8 +56,11 @@ func init() {
 	})
 	log.SetReportCaller(false)
 	log.SetOutput(os.Stdout)
-	log.SetLevel(log.InfoLevel) // default is info level, if verbose then trace
+	log.SetLevel(log.DebugLevel) // default is info level, if verbose then trace
 	val := os.Getenv("FLOG")
+	log.WithFields(log.Fields{
+		"flog": os.Getenv("FLOG"),
+	}).Debug("environment variable")
 	if val == "1" {
 		f, err := os.Open(os.Getenv("LOGF")) // file for logs
 		if err != nil {
@@ -52,6 +75,9 @@ func init() {
 		log.Debug("log output is Stdout")
 	}
 	val = os.Getenv("SILENT")
+	log.WithFields(log.Fields{
+		"silence": os.Getenv("SILENT"),
+	}).Debug("environment variable")
 	if val == "1" {
 		log.SetLevel(log.ErrorLevel) // for development
 	} else {
@@ -59,36 +85,38 @@ func init() {
 	}
 
 	log.Debug("Making database connections ..")
-	f, err := os.Open(MONGO_URI_SECRET)
-	if err != nil || f == nil {
-		log.Fatalf("failed to open mongo connection uri from secret file %s", err)
+
+	/* Making the mongo connection params  */
+	secrets, err := readK8SecretMount(MONGO_URI_SECRET)
+	if err != nil || len(secrets) == 0 {
+		log.WithFields(log.Fields{
+			"err":     err,
+			"secrets": secrets,
+		}).Fatalf("failed to read secret from mount")
 	}
-	byt, err := io.ReadAll(f)
-	if err != nil {
-		log.Fatalf("failed to read mongo connection uri from secret file %s", err)
-	}
-	mongoConnectURI = string(byt) // now that we have mongo connect uri we shall be
-	if mongoConnectURI == "" {
-		log.Fatal("mongo connect uri is empty, check secret file and rerun application")
-	}
+	mongoConnectURI = secrets[0]
+	log.WithFields(log.Fields{
+		"uri": mongoConnectURI,
+	}).Debug("mongo connect uri from secret")
+
 	mongoDBName = os.Getenv("MONGO_DB_NAME")
 	if mongoDBName == "" {
 		log.Fatal("invalid/empty name for mongo db, cannot proceed")
 	}
 
-	/* Making AMQP connections */
-	f, err = os.Open(AMQP_URI_SECRET)
-	if err != nil || f == nil {
-		log.Fatalf("failed to open amqp connection uri from secret file %s", err)
+	log.Debug("Making rabbitmq connections ..")
+	/* Making AMQP connection.. */
+	secrets, err = readK8SecretMount(AMQP_URI_SECRET)
+	if err != nil || len(secrets) == 0 {
+		log.WithFields(log.Fields{
+			"err":     err,
+			"secrets": secrets,
+		}).Fatalf("failed to read secret from mount")
 	}
-	byt, err = io.ReadAll(f)
-	if err != nil {
-		log.Fatalf("failed to read amqp connection uri from secret file %s", err)
-	}
-	amqpConnectURI = string(byt)
-	if amqpConnectURI == "" {
-		log.Fatal("amqp connect uri is empty, check secret file and rerun application")
-	}
+	amqpConnectURI = secrets[0]
+	log.WithFields(log.Fields{
+		"uri": amqpConnectURI,
+	}).Debug("amqp connect uri from secret")
 	rabbitXchng = os.Getenv("AMQP_XNAME")
 
 }
@@ -99,8 +127,7 @@ func main() {
 	gin.SetMode(gin.DebugMode)
 	r := gin.Default()
 
-	devices := r.Group("/api/devices")
-	devices.Use(CORS).Use(MongoConnectURI(mongoConnectURI, mongoDBName))
+	devices := r.Group("/api/devices").Use(CORS).Use(MongoConnectURI(mongoConnectURI, mongoDBName))
 
 	// Posting a new device registrations
 	// Getting a list of devices filtered on a field

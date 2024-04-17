@@ -1,0 +1,58 @@
+# encapsulating service for mongo pod 
+# typically we are to use only one pod for the database 
+apiVersion: v1
+kind: Service
+metadata:
+ name: svc-mongo
+spec:
+ type: NodePort
+ ports:
+  - port: 27017
+    targetPort: 27017
+    nodePort: 32701
+    protocol: TCP
+ selector:
+  type: database 
+  app: mongo
+
+---
+# encapsulating service for the rabbit broker
+# dual port expose since one for gui and another for api access
+# remove gui access port when moving to production 
+apiVersion: v1
+kind: Service
+metadata:
+ name: svc-rabbit
+spec:
+ type: NodePort
+ ports:
+  - port: 80
+    targetPort: 15672
+    nodePort: 31567
+    protocol: TCP
+    name: port-gui
+  - port: 5672
+    targetPort: 5672
+    nodePort: 30567
+    protocol: TCP
+    name: port-api
+ selector:
+  type: broker 
+  app: rabbit
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+ name: svc-devicereg
+spec:
+ type: NodePort
+ ports:
+  - port: 8080
+    targetPort: 8080
+    nodePort: 30001
+    protocol: TCP
+ selector:
+  app: api-devicereg
+  type: gogin 

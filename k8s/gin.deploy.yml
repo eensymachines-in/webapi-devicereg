@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deploy-devicereg
+  labels:
+    app: api-devicereg
+    type: gogin 
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-devicereg
+      type: gogin
+  template:
+    metadata:
+      name: pod-devicereg
+      labels:
+        app: api-devicereg
+        type: gogin
+    spec:
+      containers:
+        - name: ctn-gin
+          image: kneerunjun/webapi-devicereg:v0.0.1
+          volumeMounts:
+            - name: vol-mongouri
+              mountPath: /run/secrets/vol-mongouri
+              readOnly: true
+            - name: vol-amqpuri
+              mountPath: /run/secrets/vol-amqpuri
+              readOnly: true
+          env:
+            - name: FLOG
+              value: "0"
+            - name: SILENT
+              value : "0"
+            - name: GINMODE
+              value : DEBUG
+            - name: AMQP_XNAME
+              value : configs_direct
+            - name: MONGO_DB_NAME
+              value : aquaponics
+            - name: DB_SEED
+              value : ifempty
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+      volumes:
+        - name: vol-mongouri
+          secret: 
+            secretName: mongo-conn-uri
+        - name: vol-amqpuri
+          secret: 
+            secretName: amqp-conn-uri

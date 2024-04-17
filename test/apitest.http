@@ -1,5 +1,5 @@
 # https://kenslearningcurve.com/tutorials/test-an-api-by-using-http-files-in-vscode/
-@baseurl=http://localhost:8081/api/devices
+@baseurl=http://localhost:30001/api/devices
 @test200_MacID=52-3C-42-D4-A9-F4
 @test404_MacID=26-97-ED-E5-FB-ED
 ### Simple test to post new device registration
@@ -41,10 +41,10 @@ PATCH {{baseurl}}/{{test200_MacID}}?path=config&action=replace
 Content-Type: application/json
 
 {
-    "tickat": "10:00",
-    "config": 2,
-    "interval": 120,
-    "pulsegap": 50
+    "tickat": "16:00",
+    "config": 0,
+    "interval": 110,
+    "pulsegap": 60
     
 }
 

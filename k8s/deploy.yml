@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deploy-mongo
+  labels:
+    app: mongo
+    type: database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo
+      type: database
+  template:
+    metadata:
+      name: pod-mongo-bionic
+      labels:
+        type: database 
+        app: mongo
+    spec:
+      containers:
+        - name: ctn-mongo
+          image: mongo:4.2-bionic
+          args: ["--auth"]
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              value: eensyaquap-dev
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              value: 33n5y+4dm1n
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 27017
+          volumeMounts:
+            - name: vol-mongo
+              mountPath: "/data/db"
+      volumes:
+        - name: vol-mongo
+          persistentVolumeClaim:
+            claimName: pvc-appdata
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deploy-rabbit
+  labels:
+    app: rabbit
+    type: broker 
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbit
+      type: broker
+  template:
+    metadata:
+      name: pod-rabbit
+      labels:
+        app: rabbit
+        type: broker
+    spec:
+      containers:
+        - name: ctn-rabbit
+          image: rabbitmq:3.13-rc-management
+          env:
+            - name: RABBITMQ_DEFAULT_USER
+              value: eensyiot-admin
+            - name: RABBITMQ_DEFAULT_PASS
+              value : 33n5y4dm1n
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 15672
+            - containerPort: 5672
+

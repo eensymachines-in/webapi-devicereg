@@ -1,7 +1,7 @@
 /*
 	For all the devices registered under eensymachines,
-	or built by eensymachines this serves as the single source of truth for device status
-	Here you can patch devices for their running configuration, such as controlling relays thru clock
+	or built by eensymachines this serves as the single source of truth for device status.
+	Devices also maintain their configuration alongsided where in changing that configuration would mean the change is pushed to the device on the ground
 
 author		: kneerunjun@gmail.com
 Copyright 	: eensymachines.in@2024
@@ -10,15 +10,23 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
 const (
+	/* Secrets inside the container are mounted at the location,
+	check the deployment file for the name of the volume mounts and actual secret key literal for the path
+	NOTE:  secret name in kubernetes  has no bearing here, volumename/literal-key*/
 	MONGO_URI_SECRET = "/run/secrets/vol-mongouri/uri"
 	AMQP_URI_SECRET  = "/run/secrets/vol-amqpuri/uri"
 )
@@ -41,13 +49,16 @@ func readK8SecretMount(fp string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	if bytes.HasSuffix(byt, []byte("\n")) { //often file read in will have this as a suffix
-		byt, _ = bytes.CutSuffix(byt, []byte("\n"))
+	if bytes.HasSuffix(byt, []byte("\n")) {
+		byt, _ = bytes.CutSuffix(byt, []byte("\n")) //often file read in will have this as a suffix
 	}
 	/* There could be multiple secrets in the same file separated by white space */
 	return strings.Split(string(byt), " "), nil
 }
 
+// init : this will set logging parameters
+// this will set mongo connection strings, database from env / secrets
+// this will set amqp connection string from env / secrets
 func init() {
 	log.SetFormatter(&log.TextFormatter{
 		DisableColors: false,
@@ -56,35 +67,27 @@ func init() {
 	})
 	log.SetReportCaller(false)
 	log.SetOutput(os.Stdout)
-	log.SetLevel(log.DebugLevel) // default is info level, if verbose then trace
+	log.SetLevel(log.InfoLevel) // default is info level, if verbose then trace
 	val := os.Getenv("FLOG")
-	log.WithFields(log.Fields{
-		"flog": os.Getenv("FLOG"),
-	}).Debug("environment variable")
 	if val == "1" {
 		f, err := os.Open(os.Getenv("LOGF")) // file for logs
 		if err != nil {
 			log.SetOutput(os.Stdout) // error in opening log file
-			log.Debug("log output is Stdout")
+			log.Warn("Failed to open log file, log output set to stdout")
 		}
 		log.SetOutput(f) // log output set to file direction
-		log.Debug("log output is set to file")
+		log.Infof("log output is set to file: %s", os.Getenv("LOGF"))
 
 	} else {
 		log.SetOutput(os.Stdout)
-		log.Debug("log output is Stdout")
+		log.Info("log output to stdout")
 	}
 	val = os.Getenv("SILENT")
-	log.WithFields(log.Fields{
-		"silence": os.Getenv("SILENT"),
-	}).Debug("environment variable")
 	if val == "1" {
-		log.SetLevel(log.ErrorLevel) // for development
+		log.SetLevel(log.ErrorLevel) // for production
 	} else {
-		log.SetLevel(log.DebugLevel) // for production
+		log.SetLevel(log.DebugLevel) // for development
 	}
-
-	log.Debug("Making database connections ..")
 
 	/* Making the mongo connection params  */
 	secrets, err := readK8SecretMount(MONGO_URI_SECRET)
@@ -99,12 +102,25 @@ func init() {
 		"uri": mongoConnectURI,
 	}).Debug("mongo connect uri from secret")
 
+	/* attempting to ping the database before we start firing requests in
+	if ofcourse each of the request will be using their own connection objects*/
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoConnectURI))
+	if err != nil || client == nil {
+		log.Fatalf("failed database connection, %s", err)
+	}
+	err = client.Ping(ctx, readpref.Primary())
+	if err != nil {
+		log.Fatalf("failed to ping database, %s", err)
+	}
+	log.Info("database is reachable..")
+	defer client.Disconnect(ctx) // purpose of this connection is served
+
 	mongoDBName = os.Getenv("MONGO_DB_NAME")
 	if mongoDBName == "" {
 		log.Fatal("invalid/empty name for mongo db, cannot proceed")
 	}
 
-	log.Debug("Making rabbitmq connections ..")
 	/* Making AMQP connection.. */
 	secrets, err = readK8SecretMount(AMQP_URI_SECRET)
 	if err != nil || len(secrets) == 0 {

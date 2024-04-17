@@ -44,6 +44,8 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
+          stdin: true
+          tty: true
       volumes:
         - name: vol-mongouri
           secret: 

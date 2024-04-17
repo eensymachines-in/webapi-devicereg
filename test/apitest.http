@@ -41,8 +41,8 @@ PATCH {{baseurl}}/{{test200_MacID}}?path=config&action=replace
 Content-Type: application/json
 
 {
-    "tickat": "16:00",
-    "config": 0,
+    "tickat": "08:30",
+    "config": 1,
     "interval": 110,
     "pulsegap": 60
     
@@ -53,5 +53,5 @@ PATCH {{baseurl}}/{{test200_MacID}}?path=users&action=append
 Content-Type: application/json
 
 [
-    "kneerunjun@gadnfad.com"
+    "kneerunjun@chutchaman.com"
 ]

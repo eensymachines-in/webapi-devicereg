@@ -99,6 +99,7 @@ func MongoConnectURI(uri, dbname string) gin.HandlerFunc {
 		c.Set("mongo-database", client.Database(dbname))
 	}
 }
+/* NOTE: Archived was when we werent using i */
 func MongoConnect(server, user, passwd, dbname string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)

@@ -1,6 +1,7 @@
 # https://kenslearningcurve.com/tutorials/test-an-api-by-using-http-files-in-vscode/
-@baseurl=http://localhost:30001/api/devices
+@baseurl=http://aqua.eensymachines.in:30001/api/devices
 @test200_MacID=52-3C-42-D4-A9-F4
+@test200_RealID=b8:27:eb:a5:be:48
 @test404_MacID=26-97-ED-E5-FB-ED
 ### Simple test to post new device registration
 POST {{baseurl}}/
@@ -37,14 +38,14 @@ DELETE {{baseurl}}/{{test200_MacID}}
 
 ### simple schedul patch
 
-PATCH {{baseurl}}/{{test200_MacID}}?path=config&action=replace
+PATCH {{baseurl}}/{{test200_RealID}}?path=config&action=replace
 Content-Type: application/json
 
 {
-    "tickat": "08:30",
-    "config": 1,
-    "interval": 110,
-    "pulsegap": 60
+    "tickat": "13:00",
+    "config": 2,
+    "interval": 4500,
+    "pulsegap": 1800
     
 }
 

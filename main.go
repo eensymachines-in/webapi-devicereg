@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/eensymachines-in/utilities"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -143,13 +144,15 @@ func main() {
 	gin.SetMode(gin.DebugMode)
 	r := gin.Default()
 
-	devices := r.Group("/api/devices").Use(CORS).Use(MongoConnectURI(mongoConnectURI, mongoDBName))
+	devices := r.Group("/api/devices").Use(utilities.CORS).Use(MongoConnectURI(mongoConnectURI, mongoDBName))
 
 	// Posting a new device registrations
 	// Getting a list of devices filtered on a field
+	devices.OPTIONS("", utilities.Preflight)
 	devices.POST("", HndlLstDvcs)
 	devices.GET("", HndlLstDvcs) //?filter=users&user=userid
 
+	devices.OPTIONS("/:deviceid", utilities.Preflight)
 	// Getting a single device details , either on mac or mongo oid
 	devices.GET("/:deviceid", DeviceOfID, HndlOneDvc)
 	// Patching device details  - config or users

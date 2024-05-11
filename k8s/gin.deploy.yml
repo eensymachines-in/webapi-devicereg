@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: ctn-gin
-          image: kneerunjun/webapi-devicereg:v0.0.1
+          image: kneerunjun/webapi-devicereg:v0.0.2
           volumeMounts:
             - name: vol-mongouri
               mountPath: /run/secrets/vol-mongouri

@@ -4,7 +4,7 @@ metadata:
   name: pv-appdata
 spec:
   capacity:
-    storage: 2Gi
+    storage: 40Gi
   accessModes:
     - ReadWriteOnce
   hostPath:
@@ -21,4 +21,4 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 2Gi
+      storage: 40Gi

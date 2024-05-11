@@ -5,6 +5,7 @@ go 1.21.0
 require (
 	github.com/eensymachines-in/errx v1.0.3-0.20240410092020-885a365b9ece
 	github.com/eensymachines-in/patio v0.0.0-20240411082548-329da191c0fe
+	github.com/eensymachines-in/utilities v1.5.4
 	github.com/gin-gonic/gin v1.9.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/streadway/amqp v1.1.0
@@ -16,6 +17,7 @@ require (
 	github.com/bytedance/sonic v1.11.3 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20230717121745-296ad89f973d // indirect
 	github.com/chenzhuoyu/iasm v0.9.0 // indirect
+	github.com/eclipse/paho.mqtt.golang v1.3.3 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
@@ -23,6 +25,7 @@ require (
 	github.com/go-playground/validator/v10 v10.19.0 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
+	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.17.8 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.7 // indirect

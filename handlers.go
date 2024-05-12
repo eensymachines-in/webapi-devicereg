@@ -118,42 +118,7 @@ func HndlOneDvc(c *gin.Context) {
 				when the consumer (device on the ground acknowledges the receip[t of the msssage, this shall confirm here) */
 				confirmations := amqpCh.NotifyPublish(make(chan amqp.Confirmation, 1))
 				defer close(confirmations)
-				/* ============ Confirmation watcher thread  =================
-				takes the request  context to know when the request has ended
-				Even when the request ends, the confirmation watcher will continue watching for confirmations on the channel*/
-				go func(ctx context.Context) {
-					abort := make(chan bool)
-					defer close(abort)
-					/* Deadline is the combination of request ending a+ 5 seocnds
-					After which the confirmation watcher has to give up and conclude the device could not receive the messages
-					deadline watcher has to also know if the confirmation has received and abort looking at the deadline*/
-					deadline := func(abort chan bool) chan bool {
-						dl := make(chan bool)
-						go func(ctx context.Context, abort chan bool) {
-							defer close(dl)
-							select {
-							case <-ctx.Done():
-								<-time.After(5 * time.Second)
-								close(dl) // its been 5 seconds since the request has ended , deadline
-								return
-							case <-abort:
-								return
-							}
-						}(ctx, abort)
-						return dl
-					}(abort)
-					select {
-					case <-confirmations:
-						// Confirmation is received and hence we send Ack true
-						// abort is closed and hence deadline watcher is also called off
-						c.AbortWithStatusJSON(http.StatusPartialContent, CmdAck{DevcMacId: string(deviceDetails.MacID), Ack: true})
-						return
-					case <-deadline:
-						// if the deadline is reached before the confirmations we send another response with Ack false
-						c.AbortWithStatusJSON(http.StatusPartialContent, CmdAck{DevcMacId: string(deviceDetails.MacID), Ack: false})
-						return
-					}
-				}(c.Request.Context())
+
 				/* ?Ready to publish the message to exchange */
 				byt, _ := json.Marshal(newCfg)
 				err := amqpCh.Publish(os.Getenv("AMQP_XNAME"), string(deviceDetails.MacID), false, false, amqp.Publishing{
@@ -169,6 +134,24 @@ func HndlOneDvc(c *gin.Context) {
 					hence you see no error is handled here */
 					DevicesCollc(db).PatchConfg(deviceDetails.MacID, *deviceDetails.Cfg, ctx) // reverting the old settings
 					return
+				} else {
+					// Success when publishing , wait for the confirmation acknowledgement
+					select {
+					case confrm := <-confirmations:
+						if !confrm.Ack {
+							httperr.HttpErrOrOkDispatch(c, httperr.ErrGatewayConnect(fmt.Errorf("rejected by the rabbit mq server")), log.WithFields(log.Fields{
+								"stack": "HndlOneDvc/PATCH",
+							}))
+							return
+						}
+						/* If received acknowledgement then does nothing escapes all the loopers to sending the device details with status ok */
+					case <-time.After(8 * time.Second):
+						/* Delay in getting the acknowledgement, deadline */
+						httperr.HttpErrOrOkDispatch(c, httperr.ErrGatewayConnect(fmt.Errorf("rabbitmq server timedout, no acknoedgement response")), log.WithFields(log.Fields{
+							"stack": "HndlOneDvc/PATCH",
+						}))
+						return
+					}
 				}
 			} else {
 				c.AbortWithStatus(http.StatusMethodNotAllowed)

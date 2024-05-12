@@ -110,6 +110,7 @@ func HndlOneDvc(c *gin.Context) {
 				*/
 				val, _ := c.Get("amqp-ch")
 				amqpCh := val.(*amqp.Channel)
+				amqpCh.Confirm(false) // since nowait is false, error can be handled here itself
 				val, _ = c.Get("amqp-conn")
 				amqpConn := val.(*amqp.Connection)
 				defer amqpConn.Close()
@@ -117,7 +118,7 @@ func HndlOneDvc(c *gin.Context) {
 				/* ------------ Setting up Publisher confirmations
 				when the consumer (device on the ground acknowledges the receip[t of the msssage, this shall confirm here) */
 				confirmations := amqpCh.NotifyPublish(make(chan amqp.Confirmation, 1))
-				defer close(confirmations)
+				// defer close(confirmations)
 
 				/* ?Ready to publish the message to exchange */
 				byt, _ := json.Marshal(newCfg)

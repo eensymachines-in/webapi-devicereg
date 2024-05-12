@@ -15,7 +15,7 @@ run: build
 	./${BINARY_NAME}
 	
 deploy:
-	docker buildx build --push -t kneerunjun/webapi-devicereg:v0.0.2 .
+	docker buildx build --push -t kneerunjun/webapi-devicereg:v0.0.3 .
 	kubectl delete -f ./k8s/gin.deploy.yml
 	kubectl apply -f ./k8s/gin.deploy.yml
 	kubectl get pods --watch -owide

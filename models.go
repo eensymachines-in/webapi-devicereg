@@ -31,3 +31,8 @@ type Device struct {
 func (dev *Device) IsValid() bool {
 	return dev.MacID.IsValid() && len(dev.Users) > 0 && dev.Cfg != nil && dev.Cfg.IsValid()
 }
+
+type CmdAck struct {
+	DevcMacId string `json:"mac"` // device mac id
+	Ack       bool   `json:"ack"`
+}

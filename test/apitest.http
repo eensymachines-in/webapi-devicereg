@@ -38,13 +38,15 @@ DELETE {{baseurl}}/{{test200_MacID}}
 
 ### simple schedul patch
 
+# Even when no bindings the ackowlegedment is instantenous  - how can that be ?
+# Acknowledgement should be only when there is a queue binding to it 
 PATCH {{baseurl}}/{{test200_RealID}}?path=config&action=replace
 Content-Type: application/json
 
 {
-    "tickat": "13:00",
-    "config": 2,
-    "interval": 4500,
+    "tickat": "19:00",
+    "config": 1,
+    "interval": 60,
     "pulsegap": 1800
     
 }
